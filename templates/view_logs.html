@@ -1,0 +1,76 @@
+<!-- templates/view_logs.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Processing Logs</h2>
+        <p>View processing logs for business card #{{ card.id }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Card Image</h5>
+            </div>
+            <div class="card-body p-0">
+                <img src="{{ url_for('static', filename='uploads/' + card.filename) }}" class="img-fluid" alt="Business Card">
+            </div>
+            <div class="card-footer">
+                <strong>Status:</strong> 
+                <span class="badge {% if card.status == 'processed' %}bg-success{% elif card.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ card.status }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Processing Logs</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Uploaded:</strong> {{ card.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </div>
+                
+                {% if card.processed_at %}
+                <div class="mb-3">
+                    <strong>Processed:</strong> {{ card.processed_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Original Filename:</strong> {{ card.original_filename }}
+                </div>
+                
+                <div class="mb-3">
+                    <strong>User:</strong> {{ card.user.username }}
+                </div>
+                
+                <hr>
+                
+                <h6>Log Details:</h6>
+                <pre class="bg-light p-3">{{ card.logs }}</pre>
+                
+                <hr>
+                
+                <h6>Extracted Data (Raw):</h6>
+                <pre class="bg-light p-3">{{ card.extracted_data }}</pre>
+                
+                <hr>
+                
+                <h6>Edited Data (Final):</h6>
+                <pre class="bg-light p-3">{{ card.edited_data }}</pre>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">Back to Admin Dashboard</a>
+                <a href="{{ url_for('admin_edit_card', card_id=card.id) }}" class="btn btn-primary">Edit Card</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

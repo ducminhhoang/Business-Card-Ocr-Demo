@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
+Pillow
+pytesseract
+opencv-python
+pandas
+numpy

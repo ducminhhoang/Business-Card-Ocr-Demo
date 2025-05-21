@@ -1,0 +1,6 @@
+__pycache__/
+static/
+model/
+instance/
+.env
+business_card_ocr.db

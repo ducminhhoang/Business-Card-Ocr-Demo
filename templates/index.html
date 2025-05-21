@@ -1,0 +1,40 @@
+<!-- templates/ -->
+{% extends "base.html" %}c:\Users\duc.hoangminh1\Downloads\login-template.html
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Business Card OCR Demo</h1>
+    <p class="lead">Upload images of business cards and extract contact information automatically using OCR technology.</p>
+    <hr class="my-4">
+    <p>Sign up or log in to try this demo application!</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('register') }}" role="button">Get Started</a>
+    <a class="btn btn-outline-primary btn-lg" href="{{ url_for('login') }}" role="button">Log In</a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-upload"></i> Upload</h5>
+                <p class="card-text">Upload images of business cards from your device or take a photo.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-magic"></i> Extract</h5>
+                <p class="card-text">Our OCR technology extracts contact information automatically.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-save"></i> Save & Export</h5>
+                <p class="card-text">Save the extracted information and export it in various formats.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

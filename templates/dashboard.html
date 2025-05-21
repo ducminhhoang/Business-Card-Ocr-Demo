@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>User Dashboard</h2>
+<p class="lead">Upload a business card image to extract contact information</p>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="upload-area" id="uploadArea">
+            <form method="POST" action="{{ url_for('upload_card') }}" enctype="multipart/form-data" id="uploadForm">
+                <input type="file" name="card_image" id="cardImage" class="hide" accept="image/*">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                    <h4>Drag & Drop or Click to Upload</h4>
+                    <p>Supported formats: JPG, PNG, GIF</p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Your Cards</h5>
+            </div>
+            <div class="card-body">
+                <p>Total cards: {{ cards|length }}</p>
+                <p>Processed: {{ cards|selectattr('status', 'equalto', 'processed')|list|length }}</p>
+                <p>Pending: {{ cards|selectattr('status', 'equalto', 'pending')|list|length }}</p>
+                <p>Failed: {{ cards|selectattr('status', 'equalto', 'failed')|list|length }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Your Business Cards</h3>
+
+{% if cards %}
+<div class="row">
+    {% for card in cards %}
+    <div class="col-md-4">
+        <div class="card">
+            <img src="{{ url_for('static', filename='uploads/' + card.filename) }}" class="card-img-top" alt="Business Card">
+            <div class="card-body">
+                {% if card.edited_data and card.status == 'processed' %}
+                {% set data = card.edited_data|tojson|safe|fromjson %}
+                <h5 class="card-title">
+                    {% if data.Name and data.Name|length > 0 %}
+                        {{ data.Name[0] }}
+                    {% else %}
+                        Card #{{ card.id }}
+                    {% endif %}
+                </h5>
+                <p class="card-text">
+                    {% if data.Position and data.Position|length > 0 %}
+                        {{ data.Position[0] }}
+                    {% endif %}
+                    {% if data.Company and data.Company|length > 0 %}
+                        at {{ data.Company[0] }}
+                    {% endif %}
+                </p>
+                {% else %}
+                <h5 class="card-title">Card #{{ card.id }}</h5>
+                <p class="card-text">Status: {{ card.status }}</p>
+                {% endif %}
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('edit_card', card_id=card.id) }}" class="btn btn-primary">
+                        {% if card.status == 'processed' %}Edit{% else %}View{% endif %}
+                    </a>
+                    {% if card.status == 'processed' %}
+                    <a href="{{ url_for('user_export_card', card_id=card.id) }}" class="btn btn-outline-secondary">
+                        Export VCF
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                Uploaded: {{ card.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    You haven't uploaded any business cards yet. Start by uploading your first one!
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadArea = document.getElementById('uploadArea');
+        const cardImage = document.getElementById('cardImage');
+        const uploadForm = document.getElementById('uploadForm');
+
+        uploadArea.addEventListener('click', function() {
+            cardImage.click();
+        });
+
+        cardImage.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                uploadForm.submit();
+            }
+        });
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('bg-light');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('bg-light');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('bg-light');
+            
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                cardImage.files = e.dataTransfer.files;
+                uploadForm.submit();
+            }
+        });
+    });
+</script>
+{% endblock %}

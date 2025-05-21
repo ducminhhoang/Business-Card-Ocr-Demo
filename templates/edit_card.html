@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Card Image and Extraction Controls -->
+        <div class="col-md-5">
+            <div class="card mb-4">
+                <img src="{{ url_for('static', filename='uploads/' + card.filename) }}" class="card-img-top" alt="Business Card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ card.original_filename }}</h5>
+                    <p class="card-text">Status: <span id="cardStatus" class="badge {% if card.status == 'processed' %}bg-success{% elif card.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">{{ card.status }}</span></p>
+                    
+                    {% if card.status == 'pending' or card.status == 'failed' %}
+                    <form id="extractForm" class="mb-3">
+                        <div class="form-group mb-3">
+                            <label for="languageSelect">Select Language:</label>
+                            <select class="form-select" id="languageSelect" name="language">
+                                <option value="vietnamese" selected>Tiếng Việt</option>
+                                <option value="english">Tiếng Anh</option>
+                                <option value="japanese">Tiếng Nhật</option>
+                                <option value="korean">Tiếng Hàn</option>
+                            </select>
+                        </div>
+                        <button type="button" id="extractButton" class="btn btn-primary w-100">
+                            <span id="extractSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            Extract Information
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+                        {% if card.status == 'processed' %}
+                        <a href="{{ url_for('user_export_card', card_id=card.id) }}" class="btn btn-success">Export as VCF</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    Uploaded: {{ card.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% if card.processed_at %}
+                    <br>Processed: {{ card.processed_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Extracted Data -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Business Card Information</h5>
+                </div>
+                <div class="card-body">
+                    <div id="loadingIndicator" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing your business card...</p>
+                    </div>
+                    
+                    <div id="extractedDataContainer" {% if card.status != 'processed' %}class="d-none"{% endif %}>
+                        <form id="cardDataForm" method="POST" action="{{ url_for('save_card', card_id=card.id) }}">
+                            {% if card.edited_data %}
+                            {% set data = card.edited_data|tojson|safe|fromjson %}
+                            <script>
+                                console.log("type", '{{ data.Name|length }}');
+                                console.log(JSON.parse('{{ card.edited_data|tojson|safe|fromjson }}'));
+                            </script>
+                            <!-- Name Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <div id="nameFields">
+                                    {% if data.Name and data.Name|length > 0 %}
+                                        {% for name in data.Name %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Name[]" value="{{ name }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Name[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="nameFields" data-name="Name[]">+ Add Name</button>
+                            </div>
+                            
+                            <!-- Company Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Company</label>
+                                <div id="companyFields">
+                                    {% if data.Company and data.Company|length > 0 %}
+                                        {% for company in data.Company %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Company[]" value="{{ company }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Company[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="companyFields" data-name="Company[]">+ Add Company</button>
+                            </div>
+                            
+                            <!-- Position Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Position</label>
+                                <div id="positionFields">
+                                    {% if data.Position and data.Position|length > 0 %}
+                                        {% for position in data.Position %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Position[]" value="{{ position }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Position[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="positionFields" data-name="Position[]">+ Add Position</button>
+                            </div>
+                            
+                            <!-- Department Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Department</label>
+                                <div id="departmentFields">
+                                    {% if data.Department and data.Department|length > 0 %}
+                                        {% for department in data.Department %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Department[]" value="{{ department }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Department[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="departmentFields" data-name="Department[]">+ Add Department</button>
+                            </div>
+                            
+                            <!-- Phone Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <div id="phoneFields">
+                                    {% if data.Phone and data.Phone|length > 0 %}
+                                        {% for phone in data.Phone %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Phone[]" value="{{ phone }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Phone[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="phoneFields" data-name="Phone[]">+ Add Phone</button>
+                            </div>
+                            
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <div id="emailFields">
+                                    {% if data.Email and data.Email|length > 0 %}
+                                        {% for email in data.Email %}
+                                        <div class="input-group mb-2">
+                                            <input type="email" class="form-control" name="Email[]" value="{{ email }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="email" class="form-control" name="Email[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="emailFields" data-name="Email[]">+ Add Email</button>
+                            </div>
+                            
+                            <!-- Address Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <div id="addressFields">
+                                    {% if data.Address and data.Address|length > 0 %}
+                                        {% for address in data.Address %}
+                                        <div class="input-group mb-2">
+                                            <textarea class="form-control" name="Address[]" rows="2">{{ address }}</textarea>
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <textarea class="form-control" name="Address[]" rows="2"></textarea>
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="addressFields" data-name="Address[]">+ Add Address</button>
+                            </div>
+                            
+                            <!-- Other Field -->
+                            <div class="mb-3">
+                                <label class="form-label">Other</label>
+                                <div id="otherFields">
+                                    {% if data.Other and data.Other|length > 0 %}
+                                        {% for other in data.Other %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Other[]" value="{{ other }}">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" name="Other[]" value="">
+                                            <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary add-field" data-field="otherFields" data-name="Other[]">+ Add Other</button>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">Save Changes</button>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                No data has been extracted yet. Please run the extraction process.
+                            </div>
+                            {% endif %}
+                        </form>
+                    </div>
+                    
+                    {% if card.status == 'failed' %}
+                    <div id="extractionFailedMessage" class="alert alert-danger">
+                        Extraction failed. Please try again.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const extractButton = document.getElementById('extractButton');
+        const extractSpinner = document.getElementById('extractSpinner');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const extractedDataContainer = document.getElementById('extractedDataContainer');
+        const cardStatus = document.getElementById('cardStatus');
+        const extractionFailedMessage = document.getElementById('extractionFailedMessage');
+        
+        // Function to update array fields
+        function updateArrayFields(containerId, values, fieldName) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Clear existing fields
+            container.innerHTML = '';
+            
+            // If no values, add one empty field
+            if (values.length === 0) {
+                const div = document.createElement('div');
+                div.className = 'input-group mb-2';
+                
+                if (fieldName.includes('Address')) {
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'form-control';
+                    textarea.name = fieldName;
+                    textarea.rows = 2;
+                    div.appendChild(textarea);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = fieldName.includes('Email') ? 'email' : 'text';
+                    input.className = 'form-control';
+                    input.name = fieldName;
+                    div.appendChild(input);
+                }
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-outline-danger remove-field';
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', removeField);
+                div.appendChild(removeBtn);
+                
+                container.appendChild(div);
+            } else {
+                // Add a field for each value
+                values.forEach(value => {
+                    const div = document.createElement('div');
+                    div.className = 'input-group mb-2';
+                    
+                    if (fieldName.includes('Address')) {
+                        const textarea = document.createElement('textarea');
+                        textarea.className = 'form-control';
+                        textarea.name = fieldName;
+                        textarea.rows = 2;
+                        textarea.value = value || '';
+                        div.appendChild(textarea);
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = fieldName.includes('Email') ? 'email' : 'text';
+                        input.className = 'form-control';
+                        input.name = fieldName;
+                        input.value = value || '';
+                        div.appendChild(input);
+                    }
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'btn btn-outline-danger remove-field';
+                    removeBtn.textContent = '×';
+                    removeBtn.addEventListener('click', removeField);
+                    div.appendChild(removeBtn);
+                    
+                    container.appendChild(div);
+                });
+            }
+        }
+        
+        // Function to add a new field
+        function addField() {
+            const fieldContainer = document.getElementById(this.dataset.field);
+            const fieldName = this.dataset.name;
+            
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            
+            if (fieldName.includes('Address')) {
+                const textarea = document.createElement('textarea');
+                textarea.className = 'form-control';
+                textarea.name = fieldName;
+                textarea.rows = 2;
+                div.appendChild(textarea);
+            } else {
+                const input = document.createElement('input');
+                input.type = fieldName.includes('Email') ? 'email' : 'text';
+                input.className = 'form-control';
+                input.name = fieldName;
+                div.appendChild(input);
+            }
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-outline-danger remove-field';
+            removeBtn.textContent = '×';
+            removeBtn.addEventListener('click', removeField);
+            div.appendChild(removeBtn);
+            
+            fieldContainer.appendChild(div);
+        }
+        
+        // Function to remove a field
+        function removeField() {
+            const container = this.parentElement.parentElement;
+            const fields = container.querySelectorAll('.input-group');
+            
+            // Don't remove if it's the last field
+            if (fields.length > 1) {
+                this.parentElement.remove();
+            } else {
+                // Clear value instead of removing
+                const input = this.parentElement.querySelector('input, textarea');
+                if (input) {
+                    input.value = '';
+                }
+            }
+        }
+        
+        // Attach event listeners to add field buttons
+        document.querySelectorAll('.add-field').forEach(button => {
+            button.addEventListener('click', addField);
+        });
+        
+        // Attach event listeners to remove field buttons
+        document.querySelectorAll('.remove-field').forEach(button => {
+            button.addEventListener('click', removeField);
+        });
+        
+        if (extractButton) {
+            extractButton.addEventListener('click', function() {
+                // Show loading indicators
+                extractButton.disabled = true;
+                extractSpinner.classList.remove('d-none');
+                loadingIndicator.classList.remove('d-none');
+                extractedDataContainer.classList.add('d-none');
+                if (extractionFailedMessage) {
+                    extractionFailedMessage.classList.add('d-none');
+                }
+                
+                // Get selected language
+                const languageSelect = document.getElementById('languageSelect');
+                const selectedLanguage = languageSelect.value;
+                
+                // Send extraction request
+                fetch('{{ url_for("extract_card_info", card_id=card.id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}'
+                    },
+                    body: 'language=' + selectedLanguage
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading indicators
+                    extractButton.disabled = false;
+                    extractSpinner.classList.add('d-none');
+                    loadingIndicator.classList.add('d-none');
+                    
+                    if (data.success) {
+                        // Update the form with extracted data
+                        extractedDataContainer.classList.remove('d-none');
+                        extractButton.parentElement.classList.add('d-none');
+                        
+                        // Clear existing fields and create new ones based on the data
+                        updateArrayFields('nameFields', data.data.Name || [], 'Name[]');
+                        updateArrayFields('companyFields', data.data.Company || [], 'Company[]');
+                        updateArrayFields('positionFields', data.data.Position || [], 'Position[]');
+                        updateArrayFields('departmentFields', data.data.Department || [], 'Department[]');
+                        updateArrayFields('phoneFields', data.data.Phone || [], 'Phone[]');
+                        updateArrayFields('emailFields', data.data.Email || [], 'Email[]');
+                        updateArrayFields('addressFields', data.data.Address || [], 'Address[]');
+                        updateArrayFields('otherFields', data.data.Other || [], 'Other[]');
+                        
+                        // Update status
+                        cardStatus.textContent = 'processed';
+                        cardStatus.classList.remove('bg-warning', 'bg-danger');
+                        cardStatus.classList.add('bg-success');
+                    } else {
+                        // Show error message
+                        if (extractionFailedMessage) {
+                            extractionFailedMessage.classList.remove('d-none');
+                        } else {
+                            const alert = document.createElement('div');
+                            alert.className = 'alert alert-danger';
+                            alert.id = 'extractionFailedMessage';
+                            alert.textContent = 'Extraction failed. Please try again.';
+                            extractButton.parentElement.after(alert);
+                        }
+                        
+                        // Update status
+                        cardStatus.textContent = 'failed';
+                        cardStatus.classList.remove('bg-warning', 'bg-success');
+                        cardStatus.classList.add('bg-danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    extractButton.disabled = false;
+                    extractSpinner.classList.add('d-none');
+                    loadingIndicator.classList.add('d-none');
+                    
+                    // Show error message
+                    if (extractionFailedMessage) {
+                        extractionFailedMessage.classList.remove('d-none');
+                    } else {
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-danger';
+                        alert.id = 'extractionFailedMessage';
+                        alert.textContent = 'Network error. Please try again.';
+                        extractButton.parentElement.after(alert);
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

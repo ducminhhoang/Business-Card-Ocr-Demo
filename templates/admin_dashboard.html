@@ -1,0 +1,79 @@
+<!-- templates/admin_dashboard.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Admin Dashboard</h2>
+<p class="lead">Manage business cards and users</p>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Users:</strong> {{ users_count }}</p>
+                <p><strong>Total Cards:</strong> {{ cards|length }}</p>
+                <hr>
+                <p><strong>Processed Cards:</strong> {{ processed_count }}</p>
+                <p><strong>Pending Cards:</strong> {{ pending_count }}</p>
+                <p><strong>Failed Cards:</strong> {{ failed_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>All Business Cards</h3>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Image</th>
+                        <th>Filename</th>
+                        <th>Status</th>
+                        <th>Uploaded</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for card in cards %}
+                    {% set user = card.user %}
+                    <tr>
+                        <td>{{ card.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>
+                            <img src="{{ url_for('static', filename='uploads/' + card.filename) }}" height="50" alt="Thumbnail">
+                        </td>
+                        <td>{{ card.original_filename }}</td>
+                        <td>
+                            <span class="badge {% if card.status == 'processed' %}bg-success{% elif card.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ card.status }}
+                            </span>
+                        </td>
+                        <td>{{ card.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('admin_edit_card', card_id=card.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{{ url_for('view_logs', card_id=card.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-file-alt"></i> Logs
+                                </a>
+                                <a href="{{ url_for('export_card', card_id=card.id) }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-download"></i> Export
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
