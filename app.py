@@ -102,6 +102,14 @@ class BusinessCard(db.Model):
 def fromjson_filter(s):
     return json.loads(s)
 
+@app.template_filter('type')
+def type_filter(obj):
+    return type(obj).__name__ 
+
+@app.template_filter('print')
+def print_filter(obj):
+    return obj["Name"] 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

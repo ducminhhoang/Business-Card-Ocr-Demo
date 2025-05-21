@@ -62,11 +62,7 @@
                     <div id="extractedDataContainer" {% if card.status != 'processed' %}class="d-none"{% endif %}>
                         <form id="cardDataForm" method="POST" action="{{ url_for('save_card', card_id=card.id) }}">
                             {% if card.edited_data %}
-                            {% set data = card.edited_data|tojson|safe|fromjson %}
-                            <script>
-                                console.log("type", '{{ data.Name|length }}');
-                                console.log(JSON.parse('{{ card.edited_data|tojson|safe|fromjson }}'));
-                            </script>
+                            {% set data = card.edited_data | fromjson %}
                             <!-- Name Field -->
                             <div class="mb-3">
                                 <label class="form-label">Name</label>
