@@ -49,7 +49,7 @@ available_models = genai.list_models()
 # llm = pipeline("text-generation", model="google/gemma-2-2b-it")
 llm = "mèo"
 for model in available_models:
-    if model.name == "models/gemma-3-1b-it":
+    if model.name == "models/gemma-3-12b-it":
         llm = None
 print("Use GEMINI API") if llm==None else print("Using LLM")
 
